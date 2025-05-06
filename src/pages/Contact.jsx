@@ -1,4 +1,3 @@
-import ViewCart from "@/components/ViewCart";
 import React from "react";
 
 const Contact = () => {

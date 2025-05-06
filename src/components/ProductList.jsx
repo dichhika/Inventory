@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { CartContext } from "../Pages/CartContext";
+import { CartContext } from "../pages/CartContext";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);

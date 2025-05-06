@@ -15,8 +15,12 @@ const Navbar = () => {
         <NavLink to="/contact">Contact</NavLink>
       </div>
       <div className="flex gap-5">
-        <Button>Login</Button>
-        <Button>Sign Up</Button>
+        <NavLink to="/login">
+          <Button>Login</Button>
+        </NavLink>
+        <NavLink to="/signup">
+          <Button>Sign Up</Button>
+        </NavLink>
 
         <NavLink to="/viewcart">
           <Button>View Cart</Button>
