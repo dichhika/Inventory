@@ -1,56 +1,159 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { Input } from "./ui/input";
 import Product from "./Product";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { CartContext } from "../Pages/CartContext";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [filtered, setFiltered] = useState([]);
   const [searchText, setSearchText] = useState("");
+  const [searchBy, setSearchBy] = useState("title");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const getProducts = async () => {
-    try {
-      const response = await fetch("https://fakestoreapi.com/products");
-      const json = await response.json();
-      setLoading(false);
-      setProducts(json);
-    } catch (error) {
-      setLoading(false);
-      setError(error);
-    }
+  const { addToCart } = useContext(CartContext);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("https://fakestoreapi.com/products");
+        const data = await res.json();
+        setProducts(data);
+        setFiltered(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err);
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const handleAddToCart = (product) => {
+    addToCart(product);
+  };
+
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+  };
+
+  const handleSearchTextChange = (text) => {
+    setSearchText(text);
+  };
+
+  const handlePriceChange = (min, max) => {
+    setMinPrice(min);
+    setMaxPrice(max);
   };
 
   useEffect(() => {
-    getProducts();
-  }, []);
+    let result = [...products];
 
-  if (loading) {
-    return <>Loading...</>;
-  }
+    if (selectedCategory !== "All") {
+      result = result.filter((p) => p.category === selectedCategory);
+    }
 
-  if (error) {
-    return <>{error.message}</>;
-  }
+    if (searchText.trim() !== "") {
+      result = result.filter((p) => {
+        const value = p[searchBy];
+        return value
+          ?.toString()
+          .toLowerCase()
+          .includes(searchText.toLowerCase());
+      });
+    }
 
-  const filteredProducts = products.filter((product) =>
-    product.title.toLowerCase().includes(searchText.toLowerCase())
-  );
+    result = result.filter((p) => {
+      const aboveMin = minPrice === "" || p.price >= parseFloat(minPrice);
+      const belowMax = maxPrice === "" || p.price <= parseFloat(maxPrice);
+      return aboveMin && belowMax;
+    });
+
+    setFiltered(result);
+  }, [searchText, searchBy, selectedCategory, minPrice, maxPrice, products]);
+
+  const categories = ["All", ...new Set(products.map((p) => p.category))];
+
+  if (loading) return <div className="p-4">Loading...</div>;
+  if (error) return <div className="p-4 text-red-500">{error.message}</div>;
 
   return (
-    <>
-      <div className="p-4">
+    <div className="p-4">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 items-center">
         <Input
           type="text"
-          placeholder="Search products..."
+          placeholder={`Search by ${searchBy}`}
           value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
+          onChange={(e) => handleSearchTextChange(e.target.value)}
+          className="w-full sm:w-1/2"
+        />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">Search by: {searchBy}</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {["title", "description"].map((key) => (
+              <DropdownMenuItem key={key} onClick={() => setSearchBy(key)}>
+                {key}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">Category: {selectedCategory}</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {categories.map((cat) => (
+              <DropdownMenuItem
+                key={cat}
+                onClick={() => handleCategoryChange(cat)}
+              >
+                {cat}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4 mb-6 items-center">
+        <Input
+          type="number"
+          placeholder="Min Price"
+          value={minPrice}
+          onChange={(e) => handlePriceChange(e.target.value, maxPrice)}
+          className="w-full sm:w-40"
+        />
+        <Input
+          type="number"
+          placeholder="Max Price"
+          value={maxPrice}
+          onChange={(e) => handlePriceChange(minPrice, e.target.value)}
+          className="w-full sm:w-40"
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((product, index) => (
-            <Product product={product} key={index} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {filtered.length > 0 ? (
+          filtered.map((product) => (
+            <Product
+              key={product.id}
+              product={product}
+              onAddToCart={handleAddToCart}
+            />
           ))
         ) : (
           <div className="col-span-full text-center text-gray-500">
@@ -58,7 +161,7 @@ const ProductList = () => {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 };
 

@@ -17,7 +17,10 @@ const Navbar = () => {
       <div className="flex gap-5">
         <Button>Login</Button>
         <Button>Sign Up</Button>
-        <Button>View Card</Button>
+
+        <NavLink to="/viewcart">
+          <Button>View Cart</Button>
+        </NavLink>
       </div>
     </nav>
   );
